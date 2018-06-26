@@ -51,8 +51,8 @@ int main(int argc, char** argv)
 	opp << 0 << 3 << 4 << 1 << 2 << 7 << 8 << 5 << 6;
 
 	/** Domain Size **/
-	int NY = 100;
-	int NX = 100; 
+	int NY = 32;
+	int NX = 32; 
 
 	/** Fluid parameters **/
 	double tau = 1.0;  
@@ -64,8 +64,8 @@ int main(int argc, char** argv)
 	double psi0 = 4.0;
 	double max = 7.0;
 	double min = -7.0;
-	int NT = 4000; // Number of iterations
-	int time_save = 100;
+	int NT = 5000; // Number of iterations
+	int tDisp = 100;
 
 	/** Multidimensional array declaration **/
 	cube f = zeros<cube>(NY,NX,NV); 		
@@ -84,6 +84,9 @@ int main(int argc, char** argv)
 	mat cdotu = zeros(NY,NX);	
 	vec f_temp(NV); 						
 	
+	wall_clock timer;
+	timer.tic();
+	
 	/** Initialize a uniformly random distributed density within the domain **/
 	mat pert = randu<mat>(NY,NY); // Note randu has range of [0,1]
 	pert = pert*(max-min) + min;
@@ -99,6 +102,10 @@ int main(int argc, char** argv)
 	/** Start of Main Time Loop **/                   
 	for (int iT=0; iT<NT; ++iT)
 	{		
+		if (iT%tDisp==0)
+		{
+		//cout<<"For iteration "<<iT<<" the average density is  "<<mean(mean(rho))<<endl;
+		}
 		/** Compute fluid variables (density, pressure and velocity) **/                     
 		rho  = sum(f,2);
 		jx.fill(0.); jy.fill(0.);
@@ -107,10 +114,10 @@ int main(int argc, char** argv)
 				jy = jy + f.slice(k)*cy(k);			
 				}
 			psi = psi0*exp(-rho0/rho);		
-			ux = (jx + 0.5*FX)/rho; // Force corrected velocity that solves the Navier-Stokes equation
+			ux = (jx + 0.5*FX)/rho; // Force corrected velocity that solves the N-S eqn
 			uy = (jy + 0.5*FY)/rho;	
 		
-		/** Shan-Chen interaction forces (Only fluid-fluid forces, no fluid-solid forces) **/
+	/** Shan-Chen interaction forces (Only fluid-fluid forces, no fluid-solid forces) **/
 		FX.fill(0.0); FY.fill(0.0);		
 		for (int i=0; i<NX; ++i) {
 			for (int j=0; j<NY;++j) {						
@@ -130,7 +137,7 @@ int main(int argc, char** argv)
 		for (int k=0; k<NV; ++k) {
 			// Second-order Explicit Forcing		
 			S.slice(k)= w(k)*FX*inv_cs_sq%(cx(k) + inv_cs_sq*(cx(k)*cy(k)*uy+ ux*(cx(k)*cx(k)-cs_sq))) + w(k)*FY*inv_cs_sq%(cy(k) + inv_cs_sq*(cx(k)*cy(k)*ux + uy*(cy(k)*cy(k)-cs_sq)));
-			// First-order Explicit Forcing
+			// Optional first-order explicit forcing
 			//S.slice(k)= w(k)*cx(k)*FX*inv_cs_sq + w(k)*cy(k)*FY*inv_cs_sq;	
 		}
 		
@@ -155,10 +162,21 @@ int main(int argc, char** argv)
 		/** Swap distributions for the next timestep **/
 			f = fTemp;	
 	} // End of time loop
+	double totalTime = timer.toc();
+	cout<<endl;
+	cout<<"It took "<<totalTime/60.<<" minutes to complete the simulation"<<endl;
+	cout<<endl;
 
 	/** Post-Processing **/
 	rho.save("rhoFinal.txt",raw_ascii);
 	cout << "Maximum Density is "<<rho.max()<<" and Minimum Density is "<< rho.min() <<endl;
+	cout<<endl;
+	
+	double nx1000 = (double)NX/1000.;
+	double ny1000 = (double)NY/1000.;
+	// Estimate million site updates per second (MSUS)
+	double msus = (nx1000*ny1000*(double)NT)/totalTime;
+	cout<<"Estimated MSUS for the current hardware is "<<msus<<endl;
 
 return 0;
 } // End of main
