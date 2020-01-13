@@ -1,5 +1,5 @@
 # Armadillo-for-LBM
-Demonstration of the use of the Armadillo C++ linear algebra library for prototyping purposes in the lattice Boltzmann method. The repo contains code for single and two phase flows. 
+Demonstration of the use of the Armadillo C++ linear algebra library for prototyping purposes in the lattice Boltzmann method. The repo contains code for single and two phase flows using BGK and MRT collision models. 
 The directory consists of the following files:
 1. ArmaFeatures.cpp: A quick rundown on the essential features of the Armadillo library in a LBM context
 2. spinodalDecomp.cpp: Simulation of the 2D spinodal decompostion process using the Shan-Chen multicomponent LB model. The code illustrates how Armadillo's datastructures and associated functionalities that can be useful for LBM purposes
